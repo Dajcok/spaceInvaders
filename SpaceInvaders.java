@@ -6,6 +6,7 @@ import org.jsfml.window.*;
 import org.jsfml.window.event.*;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Iterator;
 import java.util.Vector;
 
 class projectile {
@@ -104,6 +105,10 @@ class targetWindow
 {
     targetWindow(int W, int H, int frameLimit)
     {
+        int enemies1PosX = 0;
+        int enemies2PosX = 0;
+        int enemies3PosX = 0;
+
         boolean projectileFired = false;
         projectile myProjectile = null;
         RenderWindow window = new RenderWindow();
@@ -112,30 +117,91 @@ class targetWindow
 
         texturesLoader ship = new texturesLoader("ship.png", new Vector2f(0.2f, 0.2f));
         while(!ship.updatePosition(new Vector2f(100.f, 1000.f)));
-        //texturesLoader enemy = new texturesLoader("enemy1.png", new Vector2f(0.2f, 0.2f));
-        //while(!enemy.updatePosition(new Vector2f(100.f, 400.f)));
+
         Vector<texturesLoader> enemies1 = new Vector<>();
-        //enemies1.add(texturesLoader());
+
+        for(int i = 0; i < 18; i++)
+        {
+            enemies1.addElement(new texturesLoader("enemy1.png", new Vector2f(0.2f, 0.2f)));
+            while(!enemies1.elementAt(i).updatePosition(new Vector2f(100.f + enemies1PosX, 400.f)));
+            enemies1PosX += 100;
+        }
+
+        Vector<texturesLoader> enemies2 = new Vector<>();
+
+        for(int i = 0; i < 18; i++)
+        {
+            enemies2.addElement(new texturesLoader("enemy2.png", new Vector2f(0.12f, 0.12f)));
+            while(!enemies2.elementAt(i).updatePosition(new Vector2f(100.f + enemies2PosX, 300.f)));
+            enemies2PosX += 100;
+        }
+
+        Vector<texturesLoader> enemies3 = new Vector<>();
+
+        for(int i = 0; i < 18; i++)
+        {
+            enemies3.addElement(new texturesLoader("enemy3.png", new Vector2f(0.1f, 0.1f)));
+            while(!enemies3.elementAt(i).updatePosition(new Vector2f(100.f + enemies3PosX, 200.f)));
+            enemies3PosX += 100;
+        }
 
         while(window.isOpen())
         {
             window.clear(Color.BLACK);
             window.draw(ship.sprite);
-            window.draw(enemy.sprite);
+            for(int i = 0; i < enemies1.size(); i++)
+                window.draw(enemies1.elementAt(i).sprite);
+            for(int i = 0; i < enemies2.size(); i++)
+                window.draw(enemies2.elementAt(i).sprite);
+            for(int i = 0; i < enemies3.size(); i++)
+                window.draw(enemies3.elementAt(i).sprite);
             if(myProjectile != null)
                 window.draw(myProjectile.projectile);
             window.display();
 
-            if(projectileFired)
+            if(projectileFired && myProjectile != null)
             {
                 myProjectile.updatePosition(new Vector2f(myProjectile.getPosition().x, myProjectile.getPosition().y - 50));
                 if(myProjectile.getPosition().y < 0)
                     projectileFired = false;
             }
 
+
+            if(myProjectile != null)
+            {
+                A:
+                for(int i = 0; i < enemies1.size() + 1; i++)
+                {
+                    if(enemies1.size() != i)//fixnut problem ked vystrielam vsetkych enemy1
+                    if (hitCheck(myProjectile.getPosition(), enemies1.elementAt(i).getSpritePos())) {
+                        myProjectile = null;
+                        projectileFired = false;
+                        enemies1.remove(i);
+                        break A;
+                    } else
+                        for (int j = 0; j < enemies2.size(); j++) {
+                            if (hitCheck(myProjectile.getPosition(), enemies2.elementAt(j).getSpritePos())) {
+                                myProjectile = null;
+                                projectileFired = false;
+                                enemies2.remove(j);
+                                break A;
+                            } else
+                                for (int k = 0; k < enemies3.size(); k++)
+                                    if (hitCheck(myProjectile.getPosition(), enemies3.elementAt(k).getSpritePos())) {
+                                        myProjectile = null;
+                                        projectileFired = false;
+                                        enemies3.remove(k);
+                                        break A;
+                                    }
+                        }
+                }
+            }
+
+
             for(Event event : window.pollEvents())
             {
-                switch(event.type) {
+                switch(event.type)
+                {
                     case CLOSED:
                         window.close();
                         break;
@@ -159,6 +225,14 @@ class targetWindow
                 }
             }
         }
+    }
+
+    boolean hitCheck(Vector2f bulletPos, Vector2f targetPos)
+    {
+        if(bulletPos.x == targetPos.x && bulletPos.y == targetPos.y)
+            return true;
+        else
+            return false;
     }
 }
 
