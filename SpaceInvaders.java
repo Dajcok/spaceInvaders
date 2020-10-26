@@ -103,6 +103,10 @@ class texturesLoader
 
 class targetWindow
 {
+    Vector2f enemies1Pos = new Vector2f(0, 0);
+    int mark = 1;
+    boolean changeDir = false;
+
     targetWindow(int W, int H, int frameLimit)
     {
         int enemies1PosX = 0;
@@ -110,6 +114,7 @@ class targetWindow
         int enemies3PosX = 0;
 
         boolean projectileFired = false;
+
         projectile myProjectile = null;
         RenderWindow window = new RenderWindow();
         window.create(new VideoMode(W, H), "Space Invaders");
@@ -159,6 +164,19 @@ class targetWindow
                 window.draw(myProjectile.projectile);
             window.display();
 
+            for(int i = 0; i < enemies1.size(); i++)
+            {
+                if(enemies1.elementAt(i).getSpritePos().x > 1870)
+                {
+                    this.changeDir = true;
+                    break;
+                }
+
+                else
+                    enemyMovement(i, enemies1);
+
+            }
+
             if(projectileFired && myProjectile != null)
             {
                 myProjectile.updatePosition(new Vector2f(myProjectile.getPosition().x, myProjectile.getPosition().y - 50));
@@ -172,27 +190,31 @@ class targetWindow
                 A:
                 for(int i = 0; i < enemies1.size() + 1; i++)
                 {
-                    if(enemies1.size() != i)//fixnut problem ked vystrielam vsetkych enemy1
-                    if (hitCheck(myProjectile.getPosition(), enemies1.elementAt(i).getSpritePos())) {
-                        myProjectile = null;
-                        projectileFired = false;
-                        enemies1.remove(i);
-                        break A;
-                    } else
-                        for (int j = 0; j < enemies2.size(); j++) {
-                            if (hitCheck(myProjectile.getPosition(), enemies2.elementAt(j).getSpritePos())) {
-                                myProjectile = null;
-                                projectileFired = false;
-                                enemies2.remove(j);
-                                break A;
-                            } else
-                                for (int k = 0; k < enemies3.size(); k++)
-                                    if (hitCheck(myProjectile.getPosition(), enemies3.elementAt(k).getSpritePos())) {
-                                        myProjectile = null;
-                                        projectileFired = false;
-                                        enemies3.remove(k);
-                                        break A;
-                                    }
+                        if (enemies1.size() != i && hitCheck(myProjectile.getPosition(), enemies1.elementAt(i).getSpritePos()))
+                        {
+                            myProjectile = null;
+                            projectileFired = false;
+                            enemies1.remove(i);
+                            break A;
+                        }
+                        else
+                            for (int j = 0; j < enemies2.size() + 1; j++) {
+                                if (enemies2.size() != j && hitCheck(myProjectile.getPosition(), enemies2.elementAt(j).getSpritePos()))
+                                {
+                                    myProjectile = null;
+                                    projectileFired = false;
+                                    enemies2.remove(j);
+                                    break A;
+                                }
+                                else
+                                    for (int k = 0; k < enemies3.size(); k++)
+                                        if (hitCheck(myProjectile.getPosition(), enemies3.elementAt(k).getSpritePos()))
+                                        {
+                                            myProjectile = null;
+                                            projectileFired = false;
+                                            enemies3.remove(k);
+                                            break A;
+                                        }
                         }
                 }
             }
@@ -229,10 +251,20 @@ class targetWindow
 
     boolean hitCheck(Vector2f bulletPos, Vector2f targetPos)
     {
-        if(bulletPos.x == targetPos.x && bulletPos.y == targetPos.y)
+        if((bulletPos.x > targetPos.x - 25 && bulletPos.y == targetPos.y) && (bulletPos.x < targetPos.x + 25 && bulletPos.y == targetPos.y))
             return true;
         else
             return false;
+    }
+
+    void enemyMovement(int i, Vector<texturesLoader> enemies1)
+    {
+        if(this.changeDir)
+        {
+            this.mark = this.mark * -1;
+        }
+        enemies1.elementAt(i).updatePosition(new Vector2f (enemies1.elementAt(i).getSpritePos().x + (this.mark * this.enemies1Pos.x), enemies1.elementAt(i).getSpritePos().y + (this.mark * this.enemies1Pos.y)));
+        this.enemies1Pos = new Vector2f(this.enemies1Pos.x + 0.0001f, this.enemies1Pos.y + 0);
     }
 }
 
