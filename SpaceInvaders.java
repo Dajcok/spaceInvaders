@@ -8,11 +8,13 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Vector;
+import java.util.Random;
 
 class projectile {
     RectangleShape projectile = new RectangleShape();
     private Vector2f size;
     private Vector2f position;
+    private Color color = Color.WHITE;
 
     projectile(Vector2f size, Vector2f position) {
         this.position = position;
@@ -21,11 +23,18 @@ class projectile {
         this.projectile.setSize(this.size);
         this.projectile.setPosition(this.position);
         this.projectile.setOrigin(new Vector2f(this.size.x / 2, this.size.y));
+        this.projectile.setFillColor(this.color);
     }
 
     void updatePosition(Vector2f position) {
         this.position = position;
         this.projectile.setPosition(this.position);
+    }
+
+    void setColor(Color color)
+    {
+        this.color = color;
+        this.projectile.setFillColor(this.color);
     }
 
     Vector2f getPosition()
@@ -105,21 +114,36 @@ class targetWindow
 {
     private boolean changeDir = false;
 
+    private projectile enemyProjectile = null;
+    private boolean eProjectileFired = false;
+
     targetWindow(int W, int H, int frameLimit)
     {
         int enemies1PosX = 0;
         int enemies2PosX = 0;
         int enemies3PosX = 0;
+        int clock = 0;
+        int livesNum = 3;
 
         boolean projectileFired = false;
-
         projectile myProjectile = null;
+
+        boolean gameOver = false;
+
         RenderWindow window = new RenderWindow();
         window.create(new VideoMode(W, H), "Space Invaders");
         window.setFramerateLimit(frameLimit);
 
         texturesLoader ship = new texturesLoader("ship.png", new Vector2f(0.2f, 0.2f));
         while(!ship.updatePosition(new Vector2f(100.f, 1000.f)));
+
+        Vector<texturesLoader> lives = new Vector<>();
+
+        for(int i = 0; i < 3; i++)
+        {
+            lives.addElement(new texturesLoader("ship.png", new Vector2f(0.1f, 0.1f)));
+            while(!lives.elementAt(i).updatePosition(new Vector2f(100.f + (i * 100), 100.f)));
+        }
 
 
         Vector<texturesLoader> enemies1 = new Vector<>();
@@ -159,15 +183,21 @@ class targetWindow
         }
 
 
-
+    GAMEOVER:
         while(window.isOpen())
         {
             window.clear(Color.BLACK);
-            window.draw(ship.sprite);
+            if(!gameOver)
+                window.draw(ship.sprite);
             for(int i = 0; i < allEnemies.size(); i++)
                 window.draw(allEnemies.elementAt(i).sprite);
             if(myProjectile != null)
                 window.draw(myProjectile.projectile);
+            if(this.enemyProjectile != null)
+                window.draw(this.enemyProjectile.projectile);
+            if(lives != null)
+                for(int i = 0; i < lives.size(); i++)
+                    window.draw(lives.elementAt(i).sprite);
             window.display();
 
 
@@ -178,13 +208,31 @@ class targetWindow
                     projectileFired = false;
             }
 
+            if(eProjectileFired && enemyProjectile != null)
+            {
+                this.enemyProjectile.updatePosition(new Vector2f(this.enemyProjectile.getPosition().x, this.enemyProjectile.getPosition().y + 50));
+                if(this.enemyProjectile.getPosition().y > 1100)
+                    this.eProjectileFired = false;
+            }
+
+            if(clock % 60 == 0)
+            {
+                if(!this.eProjectileFired)
+                {
+                    Random rand = new Random();
+                    int random = rand.nextInt(allEnemies.size());
+                    this.enemyFire(allEnemies, random);
+                }
+                System.out.println("Teraaaz");
+            }
+
 
             if(myProjectile != null)
             {
                 A:
                 for(int i = 0; i < allEnemies.size() + 1; i++)
                 {
-                    if (allEnemies.size() != i && hitCheck(myProjectile.getPosition(), allEnemies.elementAt(i).getSpritePos()))
+                    if (allEnemies.size() != i && hitCheck(myProjectile.getPosition(), allEnemies.elementAt(i).getSpritePos(), 25))
                     {
                         myProjectile = null;
                         projectileFired = false;
@@ -193,6 +241,27 @@ class targetWindow
                     }
 
                 }
+            }
+
+            if(this.enemyProjectile != null)
+            {
+                if(hitCheck(this.enemyProjectile.getPosition(), ship.getSpritePos(), 40))
+                {
+                    this.enemyProjectile = null;
+                    this.eProjectileFired = false;
+                    if(lives != null)
+                    {
+                        livesNum--;
+                        if(livesNum == 0)
+                        {
+                            gameOver = true;
+                            break GAMEOVER;
+                        }
+                        lives.remove(0);
+                    }
+                }
+
+
             }
 
             enemyMovement(allEnemies);
@@ -223,15 +292,23 @@ class targetWindow
                     window.close();
                 }
             }
+
+            clock++;
         }
     }
 
-    boolean hitCheck(Vector2f bulletPos, Vector2f targetPos)
+    boolean hitCheck(Vector2f bulletPos, Vector2f targetPos, int halfSize)
     {
-        if((bulletPos.x > targetPos.x - 25 && bulletPos.y > targetPos.y - 25) && (bulletPos.x < targetPos.x + 25 && bulletPos.y < targetPos.y + 25))
+        if((bulletPos.x > targetPos.x - halfSize && bulletPos.y > targetPos.y - halfSize) && (bulletPos.x < targetPos.x + halfSize && bulletPos.y < targetPos.y + halfSize))
             return true;
         else
             return false;
+    }
+    void enemyFire(Vector<texturesLoader> enemies, int random)
+    {
+        this.enemyProjectile = new projectile(new Vector2f(5, 50), enemies.elementAt(random).getSpritePos());
+        this.enemyProjectile.setColor(Color.RED);
+        this.eProjectileFired = true;
     }
 
     void enemyMovement(Vector<texturesLoader> enemies)
